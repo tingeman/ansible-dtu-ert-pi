@@ -1,0 +1,80 @@
+  # ==============================================================
+  # Modification of /boot/config.txt
+  #
+  # Currently doing:
+  # OK; dtoverlay=gpio-fan,gpiopin=21,tmp={{fan_on_temperature}}
+  # OK; dtoverlay=pi3-miniuart-bt
+  # OK; dtoverlay=miniuart-bt
+  # OK; dtparam=i2c_arm=on
+  # OK; dtparam=i2c1=on
+  # OK; core_freq=250
+  # ==============================================================
+  - name: Modify /boot/config.txt
+    block:
+    - name: Set up fan control on GPIO21
+      ansible.builtin.lineinfile: 
+        path: /boot/config.txt
+        regexp: '^[\s#]*dtoverlay[\s]*=[\s]*gpio-fan'
+        line: dtoverlay=gpio-fan,gpiopin=21,tmp={{fan_on_temperature}}
+        insertafter: '^\[all|All|ALL\]'
+        state: present
+    
+    - name: Enable or disable bluetooth
+      ansible.builtin.lineinfile: 
+        path: /boot/config.txt
+        regexp: '^[\s#]*dtoverlay[\s]*=[\s]*(disable-bt|enable-bt)'
+        line: dtoverlay={{bluetooth_flag}}
+        insertafter: '^\[all|All|ALL\]'
+        state: present
+
+    - name: Set miniuart over bluetooth
+      ansible.builtin.lineinfile: 
+        path: /boot/config.txt
+        regexp: '^[\s#]*dtoverlay=pi3-miniuart-bt'
+        line: dtoverlay=pi3-miniuart-bt
+        insertafter: '^\[all|All|ALL\]'
+        state: present
+
+    - name: Set miniuart over bluetooth
+      ansible.builtin.lineinfile: 
+        path: /boot/config.txt
+        regexp: '^[\s#]*dtoverlay=miniuart-bt'
+        line: dtoverlay=miniuart-bt
+        insertafter: '^\[all|All|ALL\]'
+        state: present
+
+    - name: Enable or disable wifi
+      ansible.builtin.lineinfile: 
+        path: /boot/config.txt
+        regexp: '^[\s#]*dtoverlay[\s]*=[\s]*(disable-wifi|enable-wifi)'
+        line: dtoverlay={{wifi_flag}}
+        insertafter: '^\[all|All|ALL\]'
+        state: present
+
+    - name: turn on i2c_arm
+      ansible.builtin.lineinfile: 
+        path: /boot/config.txt
+        regexp: '^[\s#]*dtparam=i2c_arm'
+        line: 'dtparam=i2c_arm=on'
+        insertafter: '^\[all|All|ALL\]'
+        state: present
+
+    - name: turn on i2c1
+      ansible.builtin.lineinfile: 
+        path: /boot/config.txt
+        regexp: '^[\s#]*dtparam=i2c1'
+        line: 'dtparam=i2c1=on'
+        insertafter: '^\[all|All|ALL\]'
+        state: present
+
+    - name: Set core frequency
+      ansible.builtin.lineinfile: 
+        path: /boot/config.txt
+        regexp: '^[\s#]*core_freq='
+        line: 'core_freq=250'
+        insertafter: '^\[all|All|ALL\]'
+        state: present
+
+    vars:
+      bluetooth_flag: "{{ 'enable-bt' if enable_bluetooth == true else 'disable-bt' }}"  
+      wifi_flag: "{{ 'enable-wifi' if enable_wifi == true else 'disable-wifi' }}"  

@@ -1,0 +1,19 @@
+  # tasks file for reboot_now role
+
+  - name: reboot_now_task
+    block:
+    - name: Check if reboot command exists
+      ansible.builtin.stat:
+        path: "{{ (dtuertpi_dir, 'sh_scripts', 'reboot_now.sh') | path_join }}"
+      register: stat_result
+
+    - name: Reboot machine using a custom reboot command
+      ansible.builtin.reboot:
+        reboot_command: "{{ (dtuertpi_dir, 'sh_scripts', 'reboot_now.sh') | path_join }}"
+      when: stat_result.stat.exists
+      register: custom_reboot
+
+    - name: Reboot machine using the system reboot command
+      ansible.builtin.reboot:
+      when: not stat_result.stat.exists
+      register: system_reboot

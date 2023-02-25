@@ -1,0 +1,254 @@
+---
+
+# OK; Templates
+# OK; Install things from apt-get
+# Install things from git
+# Reboot machine
+# Grouping of tasks (roles?)
+
+
+# plays:
+# tasks:
+# roles:
+
+
+# ansible-vault    til opbevaring af private keys, passwords etc
+
+# To modify how results are output:
+# failed-when
+# changed-when
+
+
+# ansible-playbook -k -i hosts playbook.yml -v
+# ansible all -i hosts -k -m ansible.builtin.setup -u pi
+
+# --extra-vars "xxx=yyy"
+
+- name: Install ert-pi from scratch
+  hosts: rpi_hosts
+  remote_user: pi
+  become: true
+  vars:
+    dtu_ert_git_repo: 'https://github.com/tingeman/dtu-ert-pi.git'
+    dtu_ert_git_branch: master
+    wittypi_git_repo: 'https://github.com/tingeman/Witty-Pi-4.git'
+    wittypi_git_branch: develop # main
+    local_tmp_dir: './tmp'
+    finally_enable_ofs_bootro: true
+
+  tasks:
+    - name: Set overlayfs and bootro to disabled
+      ansible.builtin.include_role:
+        name: configure_overlayfs_and_bootro
+      vars:
+        enable_bootro: false
+        enable_overlayfs: false
+        allow_reboot: true
+
+    - name: fstab edit
+      ansible.builtin.include_role:
+        name: configure_fstab
+      vars:
+        - usb_device: '/dev/sda1'
+
+    - name: Run apt-get update
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Create a temp directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ tmp_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0775      
+
+    - name: Set locale, keyboard and timezone
+      # Inspiration from:
+      #    https://github.com/giuaig/ansible-raspi-config/blob/master/raspi-config.yml
+      #    https://github.com/RPi-Distro/raspi-config/blob/master/raspi-config
+
+      block:
+        - name: Change locale
+          ansible.builtin.shell: "raspi-config nonint do_change_locale {{ LOCALE }}"
+        
+        # - name: Change timezone
+        #   ansible.builtin.shell: "raspi-config nonint do_change_timezone {{ TIMEZONE }}"
+
+        - name: Change keyboard layout
+          shell: "raspi-config nonint do_configure_keyboard {{ XKBLAYOUT }}"
+
+      vars:
+        LOCALE: "da_DK.UTF-8"
+        TIMEZONE: "Etc/UTC"
+        XKBLAYOUT: "dk" #default "gb"
+
+    - name: Setup .bashrc for root user (to get color terminal etc)
+      ansible.builtin.copy:
+        src: /home/pi/.bashrc
+        remote_src: true
+        dest: /root/.bashrc
+        owner: root
+        group: root
+        mode: u=rw,g=r,o=r
+
+    # ==============================================================
+    # Configure /boot/config.txt
+    # ==============================================================
+    - name: Configure /boot/config.txt
+      ansible.builtin.include_role: 
+        name: configure_boot_config
+
+    # ==============================================================
+    # Enable I2C
+    # ==============================================================
+    - name: Enable I2C
+      ansible.builtin.include_role: 
+        name: enable_i2c
+
+    # ==============================================================
+    # Configuring time related settings
+    # ==============================================================
+    - name: Configure time related settings
+      ansible.builtin.include_role: 
+        name: configure_ntp
+
+    # ==============================================================
+    # Configuring dhcp client settings
+    # ==============================================================
+    - name: Configure dhcp client to have static ip address on eth0
+      ansible.builtin.include_role: 
+        name: configure_dhcp_client
+
+    # ==============================================================
+    # Configuring dhcp server settings
+    # ==============================================================
+    - name: Configure dhcp server on eth0
+      ansible.builtin.include_role: 
+        name: configure_dhcp_server
+
+    # ==============================================================
+    # Installing and configuring modem connection
+    # ==============================================================
+    - name: Configure modem connection
+      ansible.builtin.include_role: 
+        name: configure_modem_connection
+
+    # ==============================================================
+    # Configure autossh connection
+    # ==============================================================
+    - name: Configure autossh connection
+      ansible.builtin.include_role: 
+        name: configure_autossh
+
+    # ==============================================================
+    # Configure mount points
+    # ==============================================================
+
+    - name: Create mount points if they do not exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0775
+      loop:
+        - "{{ (usb_mount_point, 'logs') | path_join }}" 
+        - "{{ (usb_mount_point, 'crontabs') | path_join }}"
+        - "{{ (usb_mount_point, 'from_terrameter') | path_join }}"
+
+    # ==============================================================
+    # Install packages
+    # ==============================================================
+    - name: install dependencies with apt-get
+      ansible.builtin.package:   # or ansible.builtin.apt (for debian/ubuntu flavors)
+        name: 
+          - python3
+          - git
+          - bc
+        state: present
+
+    # ==============================================================
+    # remove unwanted packages
+    # ==============================================================
+    - name: Remove unwanted packages with apt-get
+      ansible.builtin.package:   # or ansible.builtin.apt (for debian/ubuntu flavors)
+        name: 
+          - dphys-swapfile
+          - wolfram-engine 
+          - triggerhappy 
+          - xserver-common 
+          - lightdm
+          - bluez
+        state: absent
+        autoremove: true
+        purge: true
+
+    # ==============================================================
+    # Install python dependencies
+    # ==============================================================
+    - name: Install python dependencies
+      ansible.builtin.include_role: 
+        name: install_python_dependencies
+
+    # ==============================================================
+    # Install dtu-ert-pi from git repository
+    # ==============================================================  
+    - name: install dtu-ert-pi from git repository
+      ansible.builtin.include_role: 
+        name: install_dtu-ert-pi_from_git
+
+    # ==============================================================
+    # Transfer settings files
+    # ============================================================== 
+    - name: Transfer settings files
+      ansible.builtin.include_role: 
+        name: configure_settings_files
+
+    # ==============================================================
+    # Update crontab
+    # ============================================================== 
+    - name: Update crontab
+      ansible.builtin.include_role: 
+        name: install_crontab
+
+    # ==============================================================
+    # Install wittypi code
+    # ==============================================================  
+    - name: install wittypi
+      ansible.builtin.include_role: 
+        name: install_wittypi_from_git
+
+    - name: Set overlayfs and bootro to enabled
+      ansible.builtin.include_role:
+        name: configure_overlayfs_and_bootro
+      vars:
+        enable_bootro: "{{ finally_enable_ofs_bootro }}"
+        enable_overlayfs: "{{ finally_enable_ofs_bootro }}"
+        allow_reboot: true
+
+    - name: Collect overlayfs and bootro facts
+      collect_overlayfs_bootro_fact:
+
+    # ==============================================================
+    # reboot remote
+    # ==============================================================  
+    # - name: reboot remote
+    #   ansible.builtin.include_role: 
+    #     name: reboot_now
+
+    # ==============================================================
+    # Final message
+    # ============================================================== 
+    # - name: Print message to user
+    #   ansible.builtin.debug:
+    #     msg: "{{ item }}"
+    #   loop:
+    #     - 'Everything implemented, except:'
+    #     - '   - configuration of crontab'
+    #     - ' '
+    #     - 'Tested and working:'
+    #     - '   - Most things are working, but not rigorously tested'
+
+
+

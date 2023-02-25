@@ -1,0 +1,17 @@
+---
+
+# ansible-playbook -k -i hosts test_reboot_now.yml -v
+# ansible all -i hosts -k -m ansible.builtin.setup -u pi
+
+# --extra-vars "xxx=yyy"
+
+- name: testing lineinfile
+  hosts: QEQ-ERT-02-RPi3
+  remote_user: pi
+  become: true
+
+  tasks:
+
+  - name: Reboot remote
+    ansible.builtin.include_role: 
+      name: reboot_now

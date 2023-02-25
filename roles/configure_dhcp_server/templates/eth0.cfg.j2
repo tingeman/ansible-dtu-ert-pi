@@ -1,0 +1,8 @@
+# The eth0 interface is configured with a fixed ip address
+# and prepared to broadcast DHCP service
+auto eth0
+iface eth0 inet static
+  address {{ eth0_static_address }}
+  netmask {{ eth0_netmask }}
+  #gateway 192.0.0.1
+  broadcast {{ eth0_broadcast_address }}

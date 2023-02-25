@@ -1,0 +1,30 @@
+  # tasks file for configure_python_dependencies role
+
+  - name: Install packages relating to python
+    ansible.builtin.apt:
+      name: 
+        - python3-dev
+        - build-essential
+        - libffi-dev
+        - python3-pip
+      state: present
+  
+  - name: Install required python modules
+    ansible.builtin.pip:
+      name:
+        - requests 
+        - netifaces 
+        - smbus2 
+        - paramiko 
+        - pyyaml 
+        - numpy 
+        - vcgencmd
+      executable: pip3
+
+  - name: Install nice-to-have python modules
+    ansible.builtin.pip:
+      name:
+        - ipython 
+        - pyserial 
+        - ipdb
+      executable: pip3

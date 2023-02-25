@@ -1,0 +1,25 @@
+---
+
+# ansible-playbook -k -i hosts test_collect_overlayfs_bootro_fact.yml -v
+# ansible all -i hosts -k -m ansible.builtin.setup -u pi
+
+# --extra-vars "xxx=yyy"
+
+- name: testing new module to collect raspi-config facts
+  hosts: QEQ-ERT-02-RPi3
+  remote_user: pi
+  become: true
+
+  tasks:
+  - name: Collect overlayfs and bootro facts
+    collect_overlayfs_bootro_fact:
+  
+  - name: Debug
+    ansible.builtin.debug:
+      msg: "{{ item }}"
+    loop: 
+      - "rpi_overlay_now: {{ rpi_overlay_now }}"
+      - "rpi_overlay_conf: {{ rpi_overlay_conf }}"
+      - "rpi_bootro_now: {{ rpi_overlay_now }}"
+      - "rpi_bootro_conf: {{ rpi_overlay_conf }}"      
+      

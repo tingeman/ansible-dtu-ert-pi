@@ -1,0 +1,24 @@
+---
+
+# ansible-playbook -k -i hosts test_collect_fs_facts.yml -v
+# ansible all -i hosts -k -m ansible.builtin.setup -u pi
+
+# --extra-vars "xxx=yyy"
+
+- name: testing fstab mount edit
+  hosts: QEQ-ERT-02-RPi1
+  remote_user: pi
+  become: true
+    
+
+  tasks:
+
+  # - name: Execute a command
+  #   ansible.builtin.command: "false"
+  #   debugger: on_failed
+
+  - name: fstab edit
+    ansible.builtin.include_role:
+      name: collect_overlayfs_and_bootro_facts
+    vars:
+      print_ofs_bootro_facts: true

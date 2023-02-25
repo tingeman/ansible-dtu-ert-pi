@@ -1,0 +1,10 @@
+---
+fan_on_temperature: 60000   # DegC * 1000
+enable_bluetooth: true
+enable_wifi: true
+
+base_dir: "./test_install"
+install_scripts_dir: "{{ (base_dir, 'install_files') | path_join}}"
+tmp_dir:  "{{ (install_scripts_dir, 'tmp') | path_join}}"
+wittypi_dir: "{{ (base_dir, 'wittypi') | path_join}}"
+dtuertpi_dir: "{{ (base_dir, 'dtu-ert-pi') | path_join}}"

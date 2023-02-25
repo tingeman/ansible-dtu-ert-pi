@@ -1,0 +1,30 @@
+  # tasks file for configure_autossh role
+
+  - name: Install packages relating to autossh
+    ansible.builtin.apt:
+      name: autossh
+      state: present
+
+  - name: Create a 2048-bit SSH key for user root user in ~jsmith/.ssh/id_rsa
+    ansible.builtin.user:
+      name: root
+      state: present
+      generate_ssh_key: yes
+      ssh_key_bits: 2048
+      ssh_key_file: "/root/.ssh/{{ inventory_hostname }}_sshkey"
+    register: flag_autossh
+
+  - name: Copy modem related files to remote
+    ansible.builtin.template:
+      src: autossh-byg-cdata1-tunnel.service.j2
+      dest: /etc/systemd/system/autossh-byg-cdata1-tunnel.service
+      owner: root
+      group: root
+      mode: u=rwx,g=rwx,o=rwx
+    notify: restart autossh service
+    register: flag_autossh
+
+  - name: Print message to remember to set up server to accept autossh connection
+    ansible.builtin.debug:
+      msg: "NB: You must manually set up the server to accept the ssh connection!"
+    when: flag_autossh.changed

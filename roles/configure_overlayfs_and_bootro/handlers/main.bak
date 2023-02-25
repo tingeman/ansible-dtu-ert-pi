@@ -1,0 +1,7 @@
+---
+# handler file for configure_overlayfs_and_bootro role
+
+- name: reboot_required
+  ansible.builtin.include_task:
+    name: reboot_now
+  when: (allow_reboot_handler is not defined) or (allow_reboot_handler == true)

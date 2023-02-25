@@ -1,0 +1,139 @@
+---
+
+    # - name: Collect facts
+    #   ansible.builtin.include_role:
+    #     name: collect_overlayfs_and_bootro_facts
+    - name: Collect overlayfs and bootro facts
+      collect_overlayfs_bootro_fact:
+
+    - name: Enable bootro
+      block: 
+        - ansible.builtin.debug:
+            msg: "Running *Enable bootro* block..."
+
+        - ansible.builtin.debug:
+            msg: "{{ item.name }}: {{ item.value }}"
+          loop:
+            - { name: 'enable_bootro',   value: "{{ enable_bootro }}" }
+            - { name: 'rpi_bootro_conf', value: "{{ rpi_bootro_conf }}" }
+            - { name: 'rpi_overlay_now', value: "{{ rpi_overlay_now }}" }
+            - { name: 'allow_reboot',    value: "{{ allow_reboot }}" }
+
+        - ansible.builtin.fail:
+            msg: Overlay in use; cannot update fstab (cannot enable bootro)
+          when: (rpi_overlay_now == 'enabled') and (allow_reboot == false)
+    
+        - name: Disable overlayfs to allow enabling bootro
+          shell: "raspi-config nonint disable_overlayfs"
+          when: (rpi_overlay_now == 'enabled') and (allow_reboot == true)
+    
+        - ansible.builtin.include_role: 
+            name: reboot_now
+          when: (rpi_overlay_now == 'enabled') and (allow_reboot == true)
+          register: status_reboot
+
+        # - name: Collect facts
+        #   ansible.builtin.include_role:
+        #     name: collect_overlayfs_and_bootro_facts
+        #   when: (status_reboot.skipped is not defined) or (status_reboot.skip_reason is not defined)
+        - name: Collect overlayfs and bootro facts
+          collect_overlayfs_bootro_fact:
+          when: (status_reboot.skipped is not defined) or (status_reboot.skip_reason is not defined)
+
+        - shell: "raspi-config nonint enable_bootro"
+          when: rpi_overlay_now == 'disabled'
+          #notify: reboot_required
+      when: (enable_bootro == true) and (rpi_bootro_conf == 'disabled')
+
+    - name: Disble bootro
+      block: 
+        - ansible.builtin.debug:
+            msg: "Running *Disable bootro* block..."
+
+        - ansible.builtin.debug:
+            msg: "{{ item.name }}: {{ item.value }}"
+          loop:
+            - { name: 'enable_bootro',   value: "{{ enable_bootro }}" }
+            - { name: 'rpi_bootro_conf', value: "{{ rpi_bootro_conf }}" }
+            - { name: 'rpi_overlay_now', value: "{{ rpi_overlay_now }}" }
+            - { name: 'allow_reboot',    value: "{{ allow_reboot }}" }
+
+        - ansible.builtin.fail:
+            msg: Overlay in use; cannot update fstab (cannot disable bootro)
+          when: (rpi_overlay_now == 'enabled') and (allow_reboot == false)
+    
+        - name: Disable overlayfs to allow disabling bootro
+          shell: "raspi-config nonint disable_overlayfs"
+          when: (rpi_overlay_now == 'enabled') and (allow_reboot == true)
+    
+        - ansible.builtin.include_role: 
+            name: reboot_now
+          when: (rpi_overlay_now == 'enabled') and (allow_reboot == true)
+          register: status_reboot
+
+        # - name: Collect facts
+        #   ansible.builtin.include_role:
+        #     name: collect_overlayfs_and_bootro_facts
+        #   when: (status_reboot.skipped is not defined) or (status_reboot.skip_reason is not defined)
+
+        - name: Collect overlayfs and bootro facts
+          collect_overlayfs_bootro_fact:
+          when: (status_reboot.skipped is not defined) or (status_reboot.skip_reason is not defined)
+
+        - shell: "raspi-config nonint disable_bootro"
+          when: rpi_overlay_now == 'disabled'
+          #notify: reboot_required
+
+        - ansible.builtin.fail:
+            msg: Overlay still in use; cannot update fstab
+          when: (rpi_overlay_now == 'enabled')
+
+      when: (enable_bootro == false) and (rpi_bootro_conf != 'disabled')
+
+    - ansible.builtin.debug:
+        msg: "Running *Enable overlayfs* block..."
+    - ansible.builtin.debug:
+        msg: "{{ item.name }}: {{ item.value }}"
+      loop:
+        - { name: 'enable_overlayfs', value: "{{ enable_overlayfs }}" }
+  
+    - name: Enable overlayfs
+      shell: "raspi-config nonint enable_overlayfs"
+      when: (enable_overlayfs == true)
+      
+    - name: Disable overlayfs
+      block:
+        - ansible.builtin.debug:
+            msg: "Running *Disable overlayfs* block..."
+        - ansible.builtin.debug:
+            msg: "{{ item.name }}: {{ item.value }}"
+          loop:
+            - { name: 'enable_overlayfs', value: "{{ enable_overlayfs }}" }
+            - { name: 'rpi_overlay_conf', value: "{{ rpi_overlay_conf }}" }
+            - { name: 'rpi_overlay_now',  value: "{{ rpi_overlay_now }}" }
+
+        - shell: "raspi-config nonint disable_overlayfs"
+          when: (enable_overlayfs == false) and (rpi_overlay_conf == 'enabled') and (rpi_overlay_now == 'enabled')
+          #notify: reboot_required
+          # in this case a reboot is required, because the ofs is currently activated
+        - shell: "raspi-config nonint disable_overlayfs"
+          when: (enable_overlayfs == false) and (rpi_overlay_conf == 'enabled') and (rpi_overlay_now == 'disabled')
+          # in this case a reboot is not required, because the ofs is not currently activated
+      when: (enable_overlayfs == false)
+    
+    # - name: Collect facts
+    #   ansible.builtin.include_role:
+    #     name: collect_overlayfs_and_bootro_facts
+    - name: Collect overlayfs and bootro facts
+      collect_overlayfs_bootro_fact:
+
+    - name: schedule reboot
+      block:
+        - include_role: 
+            name: reboot_now
+          when: ((rpi_overlay_conf != rpi_overlay_now) or (rpi_bootro_conf != rpi_bootro_now) or (enable_overlayfs == true)) and (allow_reboot == true)
+          register: status_reboot
+
+        - name: Collect overlayfs and bootro facts
+          collect_overlayfs_bootro_fact:
+          when: (status_reboot.skipped is not defined) or (status_reboot.skip_reason is not defined)

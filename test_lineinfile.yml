@@ -1,0 +1,64 @@
+---
+
+# ansible-playbook -k -i hosts test_lineinfile.yml -v
+# ansible all -i hosts -k -m ansible.builtin.setup -u pi
+
+# --extra-vars "xxx=yyy"
+
+- name: testing lineinfile
+  hosts: mylocalhost
+  remote_user: thin
+  become: false
+  vars:
+    dtu_ert_git_repo: 'https://github.com/tingeman/dtu-ert-pi.git'
+    dtu_ert_git_branch: master
+    
+
+  tasks:
+
+  - name: Creating a file with content
+    copy:
+      dest: ./files/dhcpd.conf
+      content: |
+        # This is a file for testing
+        subnet 192.168.23.0 netmask 255.255.255.0 {
+          # this is rubbish;
+          # more rubbish;
+        }
+        subnet 192.168.24.0 netmask 255.255.255.0 {
+          range 192.168.24.11 192.168.24.30;
+          option broadcast-address 192.168.24.255;
+        }
+  
+  - name: Remove any subnet definition in dhcpd.conf
+    ansible.builtin.replace:
+      path: ./files/dhcpd.conf
+      regexp: '^[\s#]*subnet.*{[\s\S\n]*}'
+      replace: ''
+  
+  - name: Insert subnet definition in dhcpd.conf
+    ansible.builtin.lineinfile: 
+      state: present
+      insertafter: EOF
+      dest: ./files/dhcpd.conf
+      line: "{{ item }}"
+    with_items:
+    - "subnet 192.168.23.0 netmask 255.255.255.0 {"
+    - "  # This is the inserted definition"
+    - "  range 192.168.23.11 192.168.23.30;"
+    - "  option broadcast-address 192.168.23.255;"
+    - "}"
+
+  # - name: Update subnet definition in dhcpd.conf
+  #   ansible.builtin.replace:
+  #     path: ./files/dhcpd.conf
+  #     regexp: '^[\s#]*subnet 192\.168\.23\.0.*{[\s\S\n]*}'
+  #     replace: |
+  #       subnet 192.168.23.0 netmask 255.255.255.0 {
+  #         # this is the updated definition
+  #         range 192.168.23.11 192.168.23.30;
+  #         option broadcast-address 192.168.23.255;
+  #       }
+
+  # regexp: '^[\s#]' matches 'all whitespace including newline' plus '#'
+  # regexp: '^[^\S\r\n]*[#]*[^\S\r\n]*' matches 'all whitespace', 'any number of #', 'all whitespace'

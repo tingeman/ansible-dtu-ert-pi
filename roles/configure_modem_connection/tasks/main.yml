@@ -1,0 +1,44 @@
+  # tasks file for configure_modem_connection role
+
+  - name: Install packages relating to modem operation
+    ansible.builtin.apt:
+      name: 
+        - libpcap0.8 
+        - libuniconf4.6 
+        - libwvstreams4.6-base 
+        - libwvstreams4.6-extras 
+        - ppp 
+        - wvdial 
+        - minicom 
+        - usb-modeswitch 
+        - lsof
+      state: present
+  
+  - name: Copy modem related files to remote
+    ansible.builtin.copy:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      owner: root
+      group: root
+      mode: "{{ item.mode }}"
+    loop:
+      - { src: 'wvdial.conf', dest: '/etc/wvdial.conf', mode: 'u=rw,g=rw,o=rw'}
+      - { src: 'wvdial', dest: '/etc/ppp/peers/wvdial', mode: 'u=rwx,g=rx,o=rx'}
+      - { src: 'ppp.conf', dest: '/etc/modules-load.d/ppp.conf', mode: 'u=rw,g=rw,o=rw'}
+      - { src: 'wait-dialup-hardware', dest: '/etc/ppp/wait-dialup-hardware', mode: 'u=rwx,g=rx,o=rx'}
+      #- { src: 'interfaces', dest: '/etc/network/interfaces', mode: 'u=rw,g=r,o=r'}
+
+  - name: Configure ppp0 interface
+    ansible.builtin.template:
+      src: ppp0.cfg.j2
+      dest: /etc/network/interfaces.d/ppp0.cfg
+      owner: root
+      group: root
+      mode: u=rw,g=rw,o=rw
+    debugger: on_failed
+
+  - name: Add root user to the dialout group
+    ansible.builtin.user:
+      name: root
+      groups: dialout
+      append: yes

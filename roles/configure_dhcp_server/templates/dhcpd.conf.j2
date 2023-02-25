@@ -1,0 +1,46 @@
+################################################################################
+# /etc/dhcp/dhcpd.conf
+################################################################################
+
+# The ddns-updates-style parameter controls whether or not the server will
+# attempt to do a DNS update when a lease is confirmed. We default to the
+# behavior of the version 2 packages ('none', since DHCP v2 didn't
+# have support for DDNS.)
+ddns-update-style none;
+
+# option definitions common to all supported networks...
+option domain-name "{{ dhcp_settings.local_domain_name }}";
+# option domain-name-servers xxx.xxx.xxx.xxx;
+
+default-lease-time 600;
+max-lease-time 7200;
+
+# If this DHCP server is the official DHCP server for the local
+# network, the authoritative directive should be uncommented.
+{% if dhcp_settings.authorative == true %}
+authoritative;
+{% else %}
+#authoritative;
+{% endif %}
+
+##========================================
+## Subnet/pools configuration
+##========================================
+
+{% for subnet in dhcp_settings.subnets %}
+subnet {{ subnet.address }} netmask {{ subnet.mask }} {
+  range {{ subnet.pool_range_begin }} {{ subnet.pool_range_end }};
+  option broadcast-address {{ subnet.broadcast_address }};
+}
+{% endfor %}
+
+##========================================
+##  Fixed address hosts
+##========================================
+
+{% for host in dhcp_settings.hosts %}
+host {{ host.hostname }} {
+    hardware ethernet {{ host.mac_address }};
+    fixed-address {{ host.fixed_ip_address }};
+}
+{% endfor %}

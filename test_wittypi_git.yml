@@ -1,0 +1,46 @@
+---
+
+# OK; Templates
+# OK; Install things from apt-get
+# Install things from git
+# Reboot machine
+# Grouping of tasks (rolls?)
+
+
+# plays:
+# tasks:
+# rolls:
+
+
+# ansible-vault    til opbevaring af private keys, passwords etc
+
+# To modify how results are output:
+# failed-when
+# changed-when
+
+
+# ansible-playbook -k -i hosts test_wittypi_git.yml -v
+# ansible all -i hosts -k -m ansible.builtin.setup -u pi
+
+# --extra-vars "xxx=yyy"
+
+- name: Install ert-pi from scratch
+  hosts: mylocalhost
+  remote_user: thin
+  become: false
+  vars:
+    dtu_ert_git_repo: 'https://github.com/tingeman/dtu-ert-pi.git'
+    dtu_ert_git_branch: master
+    wittypi_git_repo: 'https://github.com/tingeman/Witty-Pi-4.git'
+    wittypi_git_branch: main
+    local_tmp_dir: './tmp'
+    
+  tasks:
+  - name: Clone wittypi git repository locally
+    local_action:
+      module: ansible.builtin.git
+      repo: "{{ wittypi_git_repo }}"
+      dest: "{{ (local_tmp_dir, 'wittypi-git-repo') | path_join }}"
+      version: "{{ wittypi_git_branch }}"
+      key_file: "{{ (base_dir, 'files', 'id_rsa_dtu_ert_pi') | path_join }}"
+    run_once: True

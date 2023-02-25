@@ -1,0 +1,13 @@
+---
+host_hardware: intel_pc
+
+fan_on_temperature: 60000   # DegC * 1000
+enable_bluetooth: true
+enable_wifi: true
+
+ssh_reverse_tunnel_port: 3333
+ssh_server_user: "{{inventory_hostname}}"
+ssh_server_ip: 192.38.64.71
+ssh_key_file: "/root/.ssh/{{inventory_hostname}}_sshkey"
+
+usb_mount_point: /media/usb

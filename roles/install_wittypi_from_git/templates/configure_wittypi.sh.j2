@@ -1,0 +1,22 @@
+#!/bin/bash
+
+WITTYPI_DEFAULT_POWER_STATE={{ wittypi_default_power_state }}
+WITTYPI_LOW_VOLTAGE_THRESHOLD={{ wittypi_low_voltage_threshold }}
+WITTYPI_RECOVERY_VOLTAGE_THRESHOLD={{ wittypi_recovery_voltage_threshold }}
+
+source {{ wittypi_dir }}/utilities.sh
+
+if [[ $WITTYPI_DEFAULT_POWER_STATE -eq 1 ]]; then
+    echo ">>> Configuring Witty Pi to power on Raspberry Pi when power is connected..."
+else
+    echo ">>> Configuring Witty Pi to keep power to Raspberry Pi off, when power is connected..."
+fi
+set_default_power_state $WITTYPI_DEFAULT_POWER_STATE
+
+out_str=$( echo "$WITTYPI_LOW_VOLTAGE_THRESHOLD*0.1" | bc )
+echo ">>> Configuring Witty Pi to shut down Raspberry Pi when input voltage drops below $out_str V ..."
+set_low_voltage_threshold $WITTYPI_LOW_VOLTAGE_THRESHOLD  # threshold voltage * 10
+
+out_str=$( echo "$WITTYPI_RECOVERY_VOLTAGE_THRESHOLD*0.1" | bc )
+echo ">>> Configuring Witty Pi to power on Raspberry Pi when input voltage recovers above $out_str V ..."
+set_recovery_voltage_threshold $WITTYPI_RECOVERY_VOLTAGE_THRESHOLD  # threshold voltage * 10

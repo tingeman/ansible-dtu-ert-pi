@@ -1,0 +1,14 @@
+# interfaces(5) file used by ifup(8) and ifdown(8)
+# Include files from /etc/network/interfaces.d:
+source /etc/network/interfaces.d/*
+
+# start cellular connection
+# pre-up
+#   wait for at max 30 seconds before connecting for the modem to become connec$
+#   Since modem  might not be available immediately
+#   wait 30 more seconds for the cellular connection to become active
+auto ppp0
+iface ppp0 inet wvdial
+pre-up /etc/ppp/wait-dialup-hardware ttyUSB2 30
+pre-up sleep 30
+post-up echo "Cellular (ppp0) is online"

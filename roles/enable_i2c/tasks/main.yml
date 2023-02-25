@@ -1,0 +1,27 @@
+  # tasks file for enable_i2c role
+  
+  - name: Install i2c-tools
+    ansible.builtin.apt:
+      name: i2c-tools
+      state: present
+
+  - name: Enable I2C modules
+    ansible.builtin.lineinfile:
+      path: /etc/modules
+      state: present
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    loop:
+      - { regexp: '^[\s]i2c-bcm2708', line: 'i2c-bcm2708'}
+      - { regexp: '^[\s]i2c-dev', line: 'i2c-dev'}
+
+  - name: Enable I2C in /boot/config.txt
+    ansible.builtin.lineinfile:
+      path: /boot/config.txt
+      state: present
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+      insertafter: "{{ item.insertafter }}"
+    loop:
+      - { regexp: '^[\s#]*dtparam=i2c1', line: 'dtparam=i2c1=on', insertafter: 'EOF'}
+      - { regexp: '^[\s#]*dtparam=i2c_arm', line: 'dtparam=i2c_arm=on', insertafter: 'EOF'}

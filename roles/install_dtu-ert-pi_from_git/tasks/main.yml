@@ -1,0 +1,37 @@
+  # ==============================================================
+  # Install dtu-ert-pi from git repository
+  # ==============================================================  
+  - name: install dtu-ert-pi from git repository
+    block:
+    - name: clone dtu-ert-pi repository locally
+      ansible.builtin.git:
+        repo: "{{ dtu_ert_git_repo }}"
+        dest: "{{ (tmp_dir, 'dtu-ert-pi-git-repo') | path_join }}"
+        version: "{{ dtu_ert_git_branch }}"
+        key_file: "{{ (base_dir, 'files', 'id_rsa_dtu_ert_pi') | path_join }}"
+
+    - name: copy dtu-ert-pi code
+      ansible.builtin.copy:
+        src: "{{ (tmp_dir, 'dtu-ert-pi-git-repo', 'dtu-ert-pi') | path_join }}/"    # trailing / means copy only contents
+        dest: "{{ dtuertpi_dir }}"
+        remote_src: yes
+    
+    - name: copy install_scripts code
+      ansible.builtin.copy:
+        src: "{{ (tmp_dir, 'dtu-ert-pi-git-repo', 'install_scripts') | path_join }}/"    # trailing / means copy only contents
+        dest: "{{ install_scripts_dir }}"
+        remote_src: yes
+
+    - name: find sh-scripts from dtu-ert-pi
+      ansible.builtin.find:
+        paths: 
+          - "{{ install_scripts_dir }}"
+          - "{{ (dtuertpi_dir, 'sh_scripts') | path_join }}"
+        patterns: '*.sh'
+      register: sh_files_found
+
+    - name: make sh-scripts executable (dtu-ert-pi)
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        mode: a+x
+      with_items: "{{ sh_files_found.files }}"

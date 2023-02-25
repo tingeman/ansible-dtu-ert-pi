@@ -1,0 +1,17 @@
+---
+
+# ansible-playbook -k -i hosts test_blockinfile.yml -v
+# ansible all -i hosts -k -m ansible.builtin.setup -u pi
+
+# --extra-vars "xxx=yyy"
+
+- name: Ansislble playbook to test the block in file module.
+  hosts: localhost
+
+  tasks:
+  - name: Insert / update match user configuration
+    ansible.builtin.blockinfile:
+      path: ./files/blockinfile_test.txt
+      block: |
+        This is a test
+        This is a test line 2

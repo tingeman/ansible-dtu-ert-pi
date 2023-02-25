@@ -1,0 +1,19 @@
+#!/bin/bash
+
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+WITTYPI_DIR={{ wittypi_dir }}
+TMP_DIR="$CURRENT_DIR"/tmp
+
+WITTYPI_USE_GLOBAL_SETTINGS=true  # Use these settings instead of those locally defined in wittypi install script
+FORCE_WITTYPI_INSTALL=true
+WITTYPI_BRANCH="{{ wittypi_git_branch }}"
+WITTYPI_DOWNLOAD_URL="{{ (wittypi_git_repo | splitext | first, 'archive', 'refs', 'heads', wittypi_git_branch + '.zip') | path_join }}"
+# WITTYPI_DOWNLOAD_URL="https://www.uugear.com/repo/WittyPi4/LATEST"    # Uncomment to install UUGEAR latest version instead
+INSTALL_UWI=false     # Set following line to 'true' to install UUGEAR Web Interface
+UWI_DOWNLOAD_URL="https://www.uugear.com/repo/UWI/installUWI.sh"
+
+WITTYPI_DEFAULT_POWER_STATE=1      # 1 = TURN ON; 0 = STAY OFF, when power is connected
+WITTYPI_LOW_VOLTAGE_THRESHOLD=55   # threshold voltage * 10 (as integer)
+WITTYPI_RECOVERY_VOLTAGE_THRESHOLD=100   # threshold voltage * 10 (as integer)
+
+source {{ (install_scripts_dir, 'wittypi_install.sh') | path_join }}

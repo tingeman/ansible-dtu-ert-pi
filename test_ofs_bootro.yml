@@ -1,0 +1,63 @@
+---
+
+# ansible-playbook -k -i hosts test_ofs_bootro.yml -v
+# ansible all -i hosts -k -m ansible.builtin.setup -u pi
+
+# --extra-vars "xxx=yyy"
+
+- name: testing overlayfs and bootro
+  hosts: QEQ-ERT-02-RPi3
+  remote_user: pi
+  become: true
+
+  roles:
+  - reboot_now_handler
+
+  tasks:
+
+  # - name: Execute a command
+  #   ansible.builtin.command: "false"
+  #   debugger: on_failed
+
+  - name: Collect overlayfs and bootro facts
+    ansible.builtin.include_role:
+      name: collect_overlayfs_and_bootro_facts
+    vars:
+      print_ofs_bootro_facts: true
+
+  # - name: Pause
+  #   ansible.builtin.pause:
+  #     prompt: "Press a enter to continue..."
+
+  - name: Set overlayfs and bootro to enabled
+    ansible.builtin.include_role:
+      name: configure_overlayfs_and_bootro
+    vars:
+      enable_bootro: true
+      enable_overlayfs: true
+      allow_reboot: true
+
+  - name: Collect overlayfs and bootro facts
+    ansible.builtin.include_role:
+      name: collect_overlayfs_and_bootro_facts
+    vars:
+      print_ofs_bootro_facts: true
+
+  # - name: Pause
+  #   ansible.builtin.pause:
+  #     prompt: "Press a enter to continue..."
+
+  - name: Set overlayfs and bootro to disabled
+    ansible.builtin.include_role:
+      name: configure_overlayfs_and_bootro
+    vars:
+      enable_bootro: false
+      enable_overlayfs: false
+      allow_reboot: true
+
+  - name: Collect overlayfs and bootro facts
+    ansible.builtin.include_role:
+      name: collect_overlayfs_and_bootro_facts
+    vars:
+      print_ofs_bootro_facts: true
+      

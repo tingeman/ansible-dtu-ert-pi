@@ -1,0 +1,214 @@
+  # tasks file for configure_dhcp_server role
+
+  - name: Install the isc-dhcp-server package 
+    ansible.builtin.apt:
+      name: isc-dhcp-server
+      state: present
+    register: apt_isc_dhcp_server
+
+  # - name: Pause and wait for confirmation
+  #   ansible.builtin.pause:
+  #     prompt: "Check .../run/systemd/generator.late/isc-dhcp-server.service and /etc/systemd/system/isc-dhcp-server.service"
+
+  # - name: Reconfigure dhcp server
+  #   ansible.builtin.command: dpkg-reconfigure isc-dhcp-server
+  #   when: apt_isc_dhcp_server.changed
+
+  - name: Configure isc-dhcp-server to use eth0
+    ansible.builtin.lineinfile:
+      path: /etc/default/isc-dhcp-server
+      regexp: '(?i)^\s*INTERFACESv4\s*='
+      line: 'INTERFACESv4="eth0"'
+      state: present
+
+  - name: Transfer and populate dhcpd.conf template
+    ansible.builtin.template:
+      src: dhcpd.conf.j2
+      dest: /etc/dhcp/dhcpd.conf
+      owner: root
+      group: root
+      mode: u=rw,g=rw,o=rw
+    debugger: on_failed
+    vars:
+      dhcp_settings: 
+        local_domain_name: terrameterls
+        authorative: true
+        subnets:
+          - { address: '192.168.23.0', mask: '255.255.255.0', pool_range_begin: '192.168.23.11', pool_range_end: '192.168.23.30', broadcast_address: '192.168.23.255' }
+        hosts:
+          - { hostname: 'LS209110003', mac_address: '02:AD:BE:EF:03:00', fixed_ip_address: '192.168.23.10' }
+          
+  # - name: Configure dhcpd as authorative
+  #   ansible.builtin.lineinfile:
+  #     path: /etc/dhcp/dhcpd.conf
+  #     regexp: '^\s*[#]*\s*authorative'
+  #     line: 'authorative;'
+  #     state: present
+
+  # - name: Configure dhcpd domain-name
+  #   ansible.builtin.lineinfile:
+  #     path: /etc/dhcp/dhcpd.conf
+  #     regexp: '^\s*option domain-name'
+  #     line: 'option domain-name "terrameterls";'
+  #     state: present
+
+  # - name: Comment out domain-name-servers in dhcpd.conf
+  #   ansible.builtin.replace:
+  #     path: /etc/dhcp/dhcpd.conf
+  #     regexp: '(?i)^\s*(option\s+domain-name-servers.*)'
+  #     replace: '# \1'
+
+  # - name: Remove any subnet definition in dhcpd.conf
+  #   ansible.builtin.replace:
+  #     path: /etc/dhcp/dhcpd.conf
+  #     regexp: '[^\S\r\n]*[#]*[^\S\r\n]*subnet.*{[\s\S\n]*}'
+  #     replace: ''
+  
+  # - name: Insert subnet definition in dhcpd.conf
+  #   ansible.builtin.lineinfile: 
+  #     state: present
+  #     dest: /etc/dhcp/dhcpd.conf
+  #     line: "{{ item }}"
+  #   loop:
+  #     - "subnet 192.168.23.0 netmask 255.255.255.0 {"
+  #     - "  # This is the inserted definition"
+  #     - "  range 192.168.23.11 192.168.23.30;"
+  #     - "  option broadcast-address 192.168.23.255;"
+  #     - "}"
+  #     - " "
+
+  # - name: Pause and wait for confirmation
+  #   ansible.builtin.pause:
+  #     prompt: "Check the subnet definition in /etc/dhcp/dhcpd.conf file..."
+
+  # - name: Remove any host definition in dhcpd.conf
+  #   ansible.builtin.replace:
+  #     path: /etc/dhcp/dhcpd.conf
+  #     regexp: '^[^\S\r\n]*[#]*[^\S\r\n]*host.*{[\s\S\n]*}'
+  #     replace: ''
+
+  # - name: Pause and wait for confirmation
+  #   ansible.builtin.pause:
+  #     prompt: "Check the host definition in /etc/dhcp/dhcpd.conf file..."
+
+  # - name: Insert host definition in dhcpd.conf
+  #   ansible.builtin.lineinfile: 
+  #     state: present
+  #     insertafter: EOF
+  #     dest: /etc/dhcp/dhcpd.conf
+  #     line: "{{ item }}"
+  #   loop:
+  #     - "host LS209110003 {"
+  #     - "  hardware ethernet 02:AD:BE:EF:03:00;"
+  #     - "  fixed-address 192.168.23.10;"
+  #     - "}"
+  #     - " "
+
+  # - name: Pause and wait for confirmation
+  #   ansible.builtin.pause:
+  #     prompt: "Check the host definition in /etc/dhcp/dhcpd.conf file..."
+
+  # - name: Pause and wait for confirmation
+  #   ansible.builtin.pause:
+  #     prompt: "Check .../run/systemd/generator.late/isc-dhcp-server.service and /etc/systemd/system/isc-dhcp-server.service"
+
+  - name: Implementing fix for restart of dhcp server
+    block:
+      - name: Check if isc-dhcp-server.service file exists
+        ansible.builtin.stat:
+          path: /etc/systemd/system/isc-dhcp-server.service
+        register: stat_result
+
+      - name: Generate isc-dhcp-server.service file if it does not exist
+        ansible.builtin.command: cp /run/systemd/generator.late/isc-dhcp-server.service /etc/systemd/system
+        when: not stat_result.stat.exists
+
+      - name: Configure automatic restart  of isc-dhcp-server service
+        community.general.ini_file:
+          path: /etc/systemd/system/isc-dhcp-server.service
+          section: "{{ item.section }}"
+          option: "{{ item.option }}"
+          value: "{{ item.value }}"
+          state: present
+          exclusive: "{{ item.exclusive }}"
+        loop:
+          - { section: 'Service', option: 'Restart', value: 'on-failure', exclusive: true }
+          - { section: 'Service', option: 'RestartSec', value: '5', exclusive: true }
+          - { section: 'Service', option: 'ExecStartPre', value: '/bin/sleep 10', exclusive: true }
+          - { section: 'Install', option: 'WantedBy', value: 'multi-user.target', exclusive: true }
+
+      # Not sure if we can have spaces around equal signs, so we remove them
+      - name: Remove spaces around equal sign in /etc/systemd/system/isc-dhcp-server.service
+        ansible.builtin.replace:
+          path: /etc/systemd/system/isc-dhcp-server.service
+          regexp: '[\s]+=[\s]+'
+          replace: '='
+
+      # - name: Insert Restart line in isc-dhcp-server.service file
+      #   ansible.builtin.lineinfile:
+      #     path: /etc/systemd/system/isc-dhcp-server.service
+      #     state: present
+      #     insertafter: '^\[Service\]'
+      #     regexp: '^[\s]*Restart[\s]*='
+      #     line: 'Restart=on-failure'
+
+      # - name: Insert RestartSec line in isc-dhcp-server.service file
+      #   ansible.builtin.lineinfile:
+      #     path: /etc/systemd/system/isc-dhcp-server.service
+      #     state: present
+      #     insertafter: '^[\s]*Restart=on-failure'
+      #     regexp: '^[\s]*RestartSec[\s]*'
+      #     line: 'RestartSec=5'
+
+      # - name: Insert ExecStartPre line in isc-dhcp-server.service file
+      #   ansible.builtin.lineinfile:
+      #     path: /etc/systemd/system/isc-dhcp-server.service
+      #     state: present
+      #     insertafter: '^[\s]ExecStart[\s]='
+      #     regexp: '^[\s]ExecStartPre[\s]='
+      #     line: 'ExecStartPre=/bin/sleep 10'
+
+      # - name: Ensure [Install] section exists in isc-dhcp-server.service file
+      #   ansible.builtin.lineinfile:
+      #     path: /etc/systemd/system/isc-dhcp-server.service
+      #     state: present
+      #     insertafter: EOF
+      #     regexp: '^[\s]\[Install\]'
+      #     line: "\n\n[Install]"
+
+      # - name: Insert WantedBy line in isc-dhcp-server.service file
+      #   ansible.builtin.lineinfile:
+      #     path: /etc/systemd/system/isc-dhcp-server.service
+      #     state: present
+      #     insertafter: '^\[Install\]'
+      #     regexp: '^[\s]*WantedBy='
+      #     line: 'WantedBy=multi-user.target'
+
+      - name: Configure eth0 interface
+        ansible.builtin.template:
+          src: eth0.cfg.j2
+          dest: /etc/network/interfaces.d/eth0.cfg
+          force: true
+          owner: root
+          group: root
+          mode: u=rw,g=rw,o=rw
+        vars:
+          eth0_static_address: '192.168.23.1'
+          eth0_netmask: '255.255.255.0'
+          eth0_broadcast_address: '192.168.23.255'
+        debugger: on_failed
+
+      - name: Force systemd to reload configs
+        ansible.builtin.systemd:
+          daemon_reload: true
+
+      # - name: restart isc-dhcp-server
+      #   ansible.builtin.systemd:
+      #     name: isc-dhcp-server
+      #     daemon_reload: true
+      #     state: restarted
+
+      - name: Ensure isc-dhcp-server is enabled on boot
+        ansible.builtin.systemd:
+          name: isc-dhcp-server
+          enabled: true

@@ -1,0 +1,8 @@
+[rpi_hosts]
+# QEQ-ERT-02-RPi3 ansible_host=192.168.0.36    # ???
+QEQ-ERT-02-RPi3 ansible_host=10.67.1.193    # WiFi
+#QEQ-ERT-02-RPi1 ansible_host=192.168.130.45 # 
+QEQ-ERT-02-RPi1 ansible_host=10.67.1.191
+
+[mylocalhosts]
+mylocalhost ansible_connection=local

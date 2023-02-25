@@ -1,0 +1,20 @@
+    - name: Enable or disable wifi
+      ansible.builtin.lineinfile: 
+        path: /boot/config.txt
+        regexp: '^[\s#]*dtoverlay[\s]*=[\s]*(disable-wifi|enable-wifi)'
+        line: "dtoverlay={{ wifi_flag }}"
+        insertafter: '^\[all|All|ALL\]'
+        state: present
+      vars:
+        wifi_flag: "{{ 'enable-wifi' if enable_wifi == true else 'disable-wifi' }}"  
+    
+    - name: schedule reboot
+      block:
+        - include_role: 
+            name: reboot_now
+          when: (allow_reboot is defined) and (allow_reboot == true)
+          register: status_reboot
+
+        - name: Collect overlayfs and bootro facts
+          collect_overlayfs_bootro_fact:
+          when: (status_reboot.skipped is not defined) or (status_reboot.skip_reason is not defined)

@@ -1,0 +1,49 @@
+    - name: get overlayfs config
+      shell: "raspi-config nonint get_overlay_conf"
+      register: result_get_overlay_conf
+    - set_fact:  
+        rpi_overlay_conf: enabled
+      when: result_get_overlay_conf.stdout == "0"
+    - set_fact:  
+        rpi_overlay_conf: disabled
+      when: result_get_overlay_conf.stdout != "0"
+
+    - name: get overlayfs current setting
+      shell: "raspi-config nonint get_overlay_now"
+      register: result_get_overlay_now
+    - set_fact:  
+        rpi_overlay_now: enabled
+      when: result_get_overlay_now.stdout == "0"
+    - set_fact:  
+        rpi_overlay_now: disabled
+      when: result_get_overlay_now.stdout != "0"
+
+    - name: get bootro config
+      shell: "raspi-config nonint get_bootro_conf"
+      register: result_get_bootro_conf
+    - set_fact:  
+        rpi_bootro_conf: enabled
+      when: result_get_bootro_conf.stdout == "0"
+    - set_fact:  
+        rpi_bootro_conf: disabled
+      when: result_get_bootro_conf.stdout != "0"
+
+    - name: get bootro current setting
+      shell: "raspi-config nonint get_bootro_now"
+      register: result_get_bootro_now
+    - set_fact:  
+        rpi_bootro_now: enabled
+      when: result_get_bootro_now.stdout == "0"
+    - set_fact:  
+        rpi_bootro_now: disabled
+      when: result_get_bootro_now.stdout != "0"
+
+    - name: debug
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: 
+        - "rpi_overlay_now = {{ rpi_overlay_now }}"
+        - "rpi_overlay_conf = {{ rpi_overlay_conf }}"
+        - "rpi_bootro_now = {{ rpi_bootro_now }}"
+        - "rpi_bootro_conf = {{ rpi_bootro_conf }}"
+      when: (print_ofs_bootro_facts is defined) and (print_ofs_bootro_facts == true)

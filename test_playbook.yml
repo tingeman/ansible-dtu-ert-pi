@@ -1,0 +1,88 @@
+---
+
+# OK; Templates
+# OK; Install things from apt-get
+# Install things from git
+# Reboot machine
+# Grouping of tasks (rolls?)
+
+
+# plays:
+# tasks:
+# rolls:
+
+
+# ansible-vault    til opbevaring af private keys, passwords etc
+
+# To modify how results are output:
+# failed-when
+# changed-when
+
+
+# ansible-playbook -k -i hosts test_playbook.yml -v
+# ansible all -i hosts -k -m ansible.builtin.setup -u pi
+
+# --extra-vars "xxx=yyy"
+
+- name: testing stuff
+  hosts: mylocalhost
+  remote_user: thin
+  become: false
+  vars:
+    dtu_ert_git_repo: 'https://github.com/tingeman/dtu-ert-pi.git'
+    dtu_ert_git_branch: master
+    
+
+  tasks:
+
+  - name: combine paths and print to debug
+    ansible.builtin.debug:
+      #msg: "{{ (base_dir, install_scripts_dir) | path_join }}"
+      #msg: "{{ (tmp_dir, 'dtu-ert-pi') | path_join }}"
+      #msg: "{{ (base_dir, 'files', 'id_rsa_dtu_ert_pi') | path_join }}"
+      msg: "{{ install_scripts_dir }}"
+
+  - name: install dtu-ert-pi from git repository
+    ansible.builtin.include_tasks: install_dtu-ert-pi_from_git.yml
+
+  # - name: install dtu-ert-pi from git repository
+  #   ansible.builtin.git:
+  #     repo: "{{ dtu_ert_git_repo }}"
+  #     dest: "{{ (tmp_dir, 'dtu-ert-pi-git-repo') | path_join }}"
+  #     version: "{{ dtu_ert_git_branch }}"
+  #     key_file: "{{ (base_dir, 'files', 'id_rsa_dtu_ert_pi') | path_join }}"
+  #   notify: 
+  #     - copy new dtu-ert-pi code
+
+  # - name: copy dtu-ert-pi code
+  #   ansible.builtin.copy:
+  #     src: "{{ (tmp_dir, 'dtu-ert-pi-git-repo', 'dtu-ert-pi') | path_join }}/"    # trailing / means copy only contents
+  #     dest: "{{ dtuertpi_dir }}"
+  #     remote_src: yes
+
+  #- name: make sh-scripts from dtu-ert-pi executable
+  #  ansible.builtin.file:
+  #    path: "{{ (dtuertpi_dir, 'sh_scripts', '*.sh') | path_join }}"
+  #    owner: root
+  #    group: root
+  #    mode: o+x    
+
+  # - name: copy install_scripts code
+  #   ansible.builtin.copy:
+  #     src: "{{ (tmp_dir, 'dtu-ert-pi-git-repo', 'install_scripts') | path_join }}/"    # trailing / means copy only contents
+  #     dest: "{{ install_scripts_dir }}"
+  #     remote_src: yes
+
+  # - name: find sh-scripts from dtu-ert-pi
+  #   ansible.builtin.find:
+  #     paths: 
+  #       - "{{ install_scripts_dir }}"
+  #       - "{{ (dtuertpi_dir, 'sh_scripts') | path_join }}"
+  #     patterns: '*.sh'
+  #   register: sh_files_found
+
+  # - name: make sh-scripts executable (dtu-ert-pi)
+  #   ansible.builtin.file:
+  #     path: "{{ item.path }}"
+  #     mode: a+x
+  #   with_items: "{{ sh_files_found.files }}"

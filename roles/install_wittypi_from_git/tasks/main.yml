@@ -1,0 +1,84 @@
+  # ==============================================================
+  # Install and configure wittypi from git repository
+  # ==============================================================  
+
+  - name: Clone wittypi git repository locally
+    delegate_to: localhost
+    become: false
+    ansible.builtin.git:
+      repo: "{{ wittypi_git_repo }}"
+      dest: "{{ (local_tmp_dir, 'wittypi-git-repo') | path_join }}"
+      version: "{{ wittypi_git_branch }}"
+      key_file: "{{ (base_dir, 'files', 'id_rsa_dtu_ert_pi') | path_join }}"
+    run_once: True
+
+  - name: Copy install script to remote_src
+    ansible.builtin.copy:
+      src: "{{ (local_tmp_dir, 'wittypi-git-repo', 'Software', 'install.sh') | path_join }}"
+      dest: "{{ (install_scripts_dir, 'wittypi_install.sh') | path_join }}"
+      owner: root
+      group: root
+      mode: u=rwx,g=rwx,o=rwx
+
+  - name: Create run_wittypi_install script from template
+    ansible.builtin.template:
+      src: run_wittypi_install.sh.j2
+      dest: "{{ (install_scripts_dir, 'run_wittypi_install.sh') | path_join }}"
+      owner: root
+      group: root
+      mode: u=rwx,g=rwx,o=rwx
+
+  - name: Execute run_wittypi_install.sh script
+    ansible.builtin.shell: "{{ (install_scripts_dir, 'run_wittypi_install.sh') | path_join }}"
+
+# ==============================================================================
+# Configure witty pi functionality
+# ==============================================================================
+
+  - name: Modify wittyPi.conf file
+    ansible.builtin.lineinfile:
+      path: "{{ (wittypi_dir, 'wittyPi.conf') | path_join }}"
+      state: present
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    loop:
+      - { regexp: '(?i)^[\s]*wittypi_home=', line: "wittypi_home=\"{{ wittypi_dir }}\"" }
+      - { regexp: '(?i)^[\s]*WITTYPI_LOG_FILE=', line: "WITTYPI_LOG_FILE=\"{{ (usb_mount_point, 'logs', 'wittyPi.log') | path_join }}\"" }
+      - { regexp: '(?i)^[\s]*SCHEDULE_LOG_FILE=', line: "SCHEDULE_LOG_FILE=\"{{ (usb_mount_point, 'logs', 'schedule.log') | path_join }}\"" }
+
+  - name: Copy wittypi schedule to schedules dir
+    ansible.builtin.copy:
+      remote_src: true
+      force: true
+      src: "{{ (install_scripts_dir, 'template_files', wittypi_schedule_file) | path_join }}"
+      dest: "{{ (wittypi_dir, 'schedules') | path_join }}/"
+
+  - name: Setting wittypi schedule
+    ansible.builtin.copy:
+      remote_src: true
+      force: true
+      src: "{{ (wittypi_dir, 'schedules', wittypi_schedule_file) | path_join }}"
+      dest: "{{ (wittypi_dir, 'schedules.wpi') | path_join }}"
+
+  - name: Ensuring correct mode of schedules.wpi file
+    ansible.builtin.file:
+      state: file
+      path: "{{ (wittypi_dir, 'schedules.wpi') | path_join }}"
+      owner: root
+      group: root
+      mode: u=rw,g=rw,o=rw
+
+  - name: Reboot
+    ansible.builtin.include_role: 
+      name: reboot_now
+
+  - name: Create configuration script from template
+    ansible.builtin.template:
+      src: configure_wittypi.sh.j2
+      dest: "{{ (wittypi_dir, 'configure_wittypi.sh') | path_join }}"
+      owner: root
+      group: root
+      mode: u=rwx,g=r,o=r
+
+  - name: Execute configure_wittypi script
+    ansible.builtin.shell: "{{ (wittypi_dir, 'configure_wittypi.sh') | path_join }}"

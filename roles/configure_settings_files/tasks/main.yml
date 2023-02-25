@@ -1,0 +1,13 @@
+  # tasks file for configure_settings_files role
+
+  - name: Copy settings files to remote
+    ansible.builtin.template:
+      src: "{{ item.src }}"
+      dest: "{{ item.dest }}"
+      owner: root
+      group: root
+      mode: u=rwx,g=rwx,o=rwx
+    loop:
+      - { src: 'python_config_rpi4.yml.j2', dest: "{{ (dtuertpi_dir, 'python_config.yml') | path_join}}" }
+      - { src: 'script_settings_rpi4.j2', dest: "{{ (dtuertpi_dir, 'sh_scripts', 'script_settings') | path_join}}" }
+    when: host_hardware == 'raspberry_pi_4'

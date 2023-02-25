@@ -1,0 +1,10 @@
+# handler file for configure_ntp role
+
+- name: update timezone
+  ansible.builtin.command: dpkg-reconfigure --frontend noninteractive tzdata
+
+- name: restart ntp service
+  ansible.builtin.service:
+    name: ntp
+    daemon_reload: true
+    state: restarted

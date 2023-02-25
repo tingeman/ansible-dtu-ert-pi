@@ -1,0 +1,48 @@
+---
+# ansible-vault    til opbevaring af private keys, passwords etc
+
+# ansible-playbook -k -i hosts playbook_install_crontab.yml -v
+# ansible all -i hosts -k -m ansible.builtin.setup -u pi
+
+# --extra-vars "xxx=yyy"
+
+- name: Install crontab
+  hosts: rpi_hosts
+  remote_user: pi
+  become: true
+  vars:
+    finally_enable_ofs_bootro: false
+
+  tasks:
+    - name: Set overlayfs and bootro to disabled
+      ansible.builtin.include_role:
+        name: configure_overlayfs_and_bootro
+      vars:
+        enable_bootro: false
+        enable_overlayfs: false
+        allow_reboot: true
+
+    # ==============================================================
+    # Set new crontab
+    # ==============================================================
+    - name: Set new crontab
+      ansible.builtin.include_role: 
+        name: install_crontab
+
+    - name: Set overlayfs and bootro to enabled
+      ansible.builtin.include_role:
+        name: configure_overlayfs_and_bootro
+      vars:
+        enable_bootro: "{{ finally_enable_ofs_bootro }}"
+        enable_overlayfs: "{{ finally_enable_ofs_bootro }}"
+        allow_reboot: true
+
+    - name: Debug
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      loop: 
+        - "rpi_overlay_now: {{ rpi_overlay_now }}"
+        - "rpi_overlay_conf: {{ rpi_overlay_conf }}"
+        - "rpi_bootro_now: {{ rpi_overlay_now }}"
+        - "rpi_bootro_conf: {{ rpi_overlay_conf }}"  
+

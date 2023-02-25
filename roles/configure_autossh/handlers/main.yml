@@ -1,0 +1,8 @@
+# handler file for configure_autossh role
+
+- name: restart autossh service
+  ansible.builtin.service:
+    name: autossh-byg-cdata1-tunnel.service
+    daemon_reload: true
+    enabled: true
+    state: restarted

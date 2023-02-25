@@ -1,0 +1,37 @@
+  # tasks file for configure_dhcp_client role
+
+  - name: Remove all whitespace from blank lines
+    ansible.builtin.replace:
+      path: /etc/dhcpcd.conf
+      regexp: '^[^\S\n\r]*$'
+      replace: ''
+      
+  - name: Remove interface eth0 definition from dhcpcd.conf
+    # Will remove the line stating with "interface eth0" and all the following
+    # lines until a completely blank line is encountered (no spaces or any other characters)
+    ansible.builtin.replace:
+      path: /etc/dhcpcd.conf
+      regexp: '^interface[\s]+eth0[\s\S]+?(?:^$|\Z)'
+      replace: ''
+
+  - name: Update interface eth0 definition from dhcpcd.conf
+    ansible.builtin.lineinfile:
+      path: /etc/dhcpcd.conf
+      state: present
+      insertafter: "{{ item.insertafter }}"
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    loop:
+      - { regexp: '^interface eth0', line: 'interface eth0', insertafter: 'EOF'}
+      - { regexp: '^static ip_address', line: 'static ip_address=92.168.23.1/24', insertafter: 'EOF'}
+      - { regexp: '^static domain_name_servers', line: 'static domain_name_servers=1.1.1.1 1.0.0.1 8.8.4.4 8.8.8.8', insertafter: 'EOF'}
+
+
+  - name: Set lower MTU for ppp0 interface
+    ansible.builtin.lineinfile:
+      path: /etc/ppp/options
+      state: present
+      insertafter: EOF
+      regexp: '^[\s]*[#]*[\s]*mtu'
+      line: 'mtu 1200'
+
