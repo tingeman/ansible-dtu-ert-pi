@@ -45,6 +45,8 @@
       - { regexp: '(?i)^[\s]*wittypi_home=', line: "wittypi_home=\"{{ wittypi_dir }}\"" }
       - { regexp: '(?i)^[\s]*WITTYPI_LOG_FILE=', line: "WITTYPI_LOG_FILE=\"{{ (usb_mount_point, 'logs', 'wittyPi.log') | path_join }}\"" }
       - { regexp: '(?i)^[\s]*SCHEDULE_LOG_FILE=', line: "SCHEDULE_LOG_FILE=\"{{ (usb_mount_point, 'logs', 'schedule.log') | path_join }}\"" }
+      - { regexp: '(?i)^[\s]*SCHEDULE_FILE=', line: "SCHEDULE_FILE=\"{{ (wittypi_dir, 'schedule.wpi') | path_join }}\"" }
+      - { regexp: '(?i)^[\s]*SCHEDULES_DIR=', line: "SCHEDULES_DIR=\"{{ (wittypi_dir, 'schedules') | path_join }}\"" }
 
   - name: Copy wittypi schedule to schedules dir
     ansible.builtin.copy:
@@ -58,12 +60,12 @@
       remote_src: true
       force: true
       src: "{{ (wittypi_dir, 'schedules', wittypi_schedule_file) | path_join }}"
-      dest: "{{ (wittypi_dir, 'schedules.wpi') | path_join }}"
+      dest: "{{ (wittypi_dir, 'schedule.wpi') | path_join }}"
 
-  - name: Ensuring correct mode of schedules.wpi file
+  - name: Ensuring correct mode of schedule.wpi file
     ansible.builtin.file:
       state: file
-      path: "{{ (wittypi_dir, 'schedules.wpi') | path_join }}"
+      path: "{{ (wittypi_dir, 'schedule.wpi') | path_join }}"
       owner: root
       group: root
       mode: u=rw,g=rw,o=rw
