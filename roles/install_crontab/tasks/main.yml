@@ -1,3 +1,6 @@
+  #=====================================================
+  # Safety jobs: reboot and reschedule startup time
+  #=====================================================
   - name: Install cron job to reboot daily at 04:00 UTC
     ansible.builtin.cron:
       name: "Safety precaution, always reboot at 04:00 UTC"
@@ -12,17 +15,30 @@
       minute: "*/15"
       job: "/usr/bin/bash {{ (wittypi_dir, 'runScript.sh') | path_join }} 1 revise  >>{{ (usb_mount_point, 'logs', 'schedule.log') | path_join }}  2>>{{ (usb_mount_point, 'logs', 'cron_errors.log') | path_join }}"
 
-  - name: Measure battery supply voltage
+  #=====================================================
+  # Jos to run at reboot
+  #=====================================================
+  - name: WittyPi Reschedule next boot after reboot
     ansible.builtin.cron:
-      name: "Measure battery supply voltage"
-      minute: "*/5"
-      job: "/usr/bin/python3 {{ (dtuertpi_dir, 'io_scripts', 'log_voltage.py') | path_join }}  2>>{{ (usb_mount_point, 'logs', 'cron_errors.log') | path_join }}"
+      name: "WittyPi Reschedule next boot after reboot"
+      # Workaround for overdue startup time causing an i2c bus lockup
+      special_time: reboot
+      job: "sleep 60 && /usr/bin/bash {{ (wittypi_dir, 'runScript.sh') | path_join }} 1 revise  >>{{ (usb_mount_point, 'logs', 'schedule.log') | path_join }}  2>>{{ (usb_mount_point, 'logs', 'cron_errors.log') | path_join }}"
 
   - name: Check in with alive server after reboot
     ansible.builtin.cron:
       name: "Check in with alive server after reboot"
       special_time: reboot
       job: "sleep 240 && /usr/bin/python3 {{ (dtuertpi_dir, 'send_alive.py') | path_join }} \"rebooted\"  2>>{{ (usb_mount_point, 'logs', 'cron_errors.log') | path_join }}"
+
+  #=====================================================
+  # Regular cron jobs
+  #=====================================================
+  - name: Measure battery supply voltage
+    ansible.builtin.cron:
+      name: "Measure battery supply voltage"
+      minute: "*/5"
+      job: "/usr/bin/python3 {{ (dtuertpi_dir, 'io_scripts', 'log_voltage.py') | path_join }}  2>>{{ (usb_mount_point, 'logs', 'cron_errors.log') | path_join }}"
 
   - name: Check in with alive server every 4 hrs
     ansible.builtin.cron:
@@ -42,3 +58,19 @@
       name: "Check that ppp0 is up, and reset if it is not"
       minute: "20"
       job: "/usr/bin/bash {{ (dtuertpi_dir, 'sh_scripts', 'check_wan_status.sh') | path_join }}  2>>{{ (usb_mount_point, 'logs', 'cron_errors.log') | path_join }}"
+
+  #=====================================================
+  # Cron jobs for testing
+  #
+  # Install using separate cron files, so that failures
+  # do not impact other cron jobs!
+  #=====================================================
+  - name: Install cron job to shutdown every 3 hrs
+    ansible.builtin.cron:
+      name: "Safety precaution, always shutdown every 3 hrs"
+      cron_file: 'ansible_testing_shutdown'    #
+      user: root
+      minute: "45"
+      hour: "*/3"
+      job: "/usr/bin/bash {{ (dtuertpi_dir, 'sh_scripts', 'shutdown_now.sh') | path_join }}  2>>{{ (usb_mount_point, 'logs', 'cron_errors.log') | path_join }}"
+      # 03:45, 06:45, 09:45, 12:45, 15:45, 18:45, 21:45, 00:45   shutdown_now

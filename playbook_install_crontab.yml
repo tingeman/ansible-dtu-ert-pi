@@ -1,7 +1,7 @@
 ---
 # ansible-vault    til opbevaring af private keys, passwords etc
 
-# ansible-playbook -k -i hosts playbook_install_crontab.yml -v
+# ansible-playbook -k -i hosts playbook_install_ntp.yml -v
 # ansible all -i hosts -k -m ansible.builtin.setup -u pi
 
 # --extra-vars "xxx=yyy"
@@ -36,13 +36,5 @@
         enable_bootro: "{{ finally_enable_ofs_bootro }}"
         enable_overlayfs: "{{ finally_enable_ofs_bootro }}"
         allow_reboot: true
-
-    - name: Debug
-      ansible.builtin.debug:
-        msg: "{{ item }}"
-      loop: 
-        - "rpi_overlay_now: {{ rpi_overlay_now }}"
-        - "rpi_overlay_conf: {{ rpi_overlay_conf }}"
-        - "rpi_bootro_now: {{ rpi_overlay_now }}"
-        - "rpi_bootro_conf: {{ rpi_overlay_conf }}"  
+        force_reboot: false
 
