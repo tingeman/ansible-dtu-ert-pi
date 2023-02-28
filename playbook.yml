@@ -34,7 +34,7 @@
     wittypi_git_repo: 'https://github.com/tingeman/Witty-Pi-4.git'
     wittypi_git_branch: develop # main
     local_tmp_dir: './tmp'
-    finally_enable_ofs_bootro: true
+    finally_enable_ofs_bootro: false
 
   tasks:
     - name: Set overlayfs and bootro to disabled
@@ -50,6 +50,7 @@
         name: configure_fstab
       vars:
         - usb_device: '/dev/sda1'
+      # Result checked and OK
 
     - name: Run apt-get update
       ansible.builtin.apt:
@@ -62,6 +63,7 @@
         owner: root
         group: root
         mode: 0775      
+      # Result checked and OK
 
     - name: Set locale, keyboard and timezone
       # Inspiration from:
@@ -91,6 +93,7 @@
         owner: root
         group: root
         mode: u=rw,g=r,o=r
+      # Result checked and OK
 
     # ==============================================================
     # Configure /boot/config.txt
@@ -98,6 +101,7 @@
     - name: Configure /boot/config.txt
       ansible.builtin.include_role: 
         name: configure_boot_config
+      # Result checked and OK
 
     # ==============================================================
     # Enable I2C
@@ -105,6 +109,7 @@
     - name: Enable I2C
       ansible.builtin.include_role: 
         name: enable_i2c
+      # Result checked and OK
 
     # ==============================================================
     # Configuring time related settings
@@ -112,6 +117,9 @@
     - name: Configure time related settings
       ansible.builtin.include_role: 
         name: configure_ntp
+      # Result checked and OK
+      #
+      # CHECK ntpdate FROM TERRAMETER
 
     # ==============================================================
     # Configuring dhcp client settings
@@ -119,6 +127,7 @@
     - name: Configure dhcp client to have static ip address on eth0
       ansible.builtin.include_role: 
         name: configure_dhcp_client
+      # Result checked and OK
 
     # ==============================================================
     # Configuring dhcp server settings
@@ -126,6 +135,7 @@
     - name: Configure dhcp server on eth0
       ansible.builtin.include_role: 
         name: configure_dhcp_server
+      # Result checked and OK
 
     # ==============================================================
     # Installing and configuring modem connection
@@ -133,6 +143,7 @@
     - name: Configure modem connection
       ansible.builtin.include_role: 
         name: configure_modem_connection
+      # Result checked and OK
 
     # ==============================================================
     # Configure autossh connection
@@ -140,12 +151,16 @@
     - name: Configure autossh connection
       ansible.builtin.include_role: 
         name: configure_autossh
+      # Make sure to do manual ssh to server, to add hostkey to authorized keys
+      # ENSURE OVERLAYFS IS DISABLED when you do this
+      #
+      # Result checked and OK
+      
 
     # ==============================================================
-    # Configure mount points
+    # Configure usb flash drive directories
     # ==============================================================
-
-    - name: Create mount points if they do not exist
+    - name: Create usb flash drive directories if they do not exist
       ansible.builtin.file:
         path: "{{ item }}"
         state: directory
@@ -156,6 +171,7 @@
         - "{{ (usb_mount_point, 'logs') | path_join }}" 
         - "{{ (usb_mount_point, 'crontabs') | path_join }}"
         - "{{ (usb_mount_point, 'from_terrameter') | path_join }}"
+      # Result checked and OK
 
     # ==============================================================
     # Install packages
@@ -163,10 +179,18 @@
     - name: install dependencies with apt-get
       ansible.builtin.package:   # or ansible.builtin.apt (for debian/ubuntu flavors)
         name: 
-          - python3
           - git
           - bc
         state: present
+      # Result checked and OK
+
+    # ==============================================================
+    # Install python dependencies
+    # ==============================================================
+    - name: Install python dependencies
+      ansible.builtin.include_role: 
+        name: install_python_dependencies
+      # Result checked and OK
 
     # ==============================================================
     # remove unwanted packages
@@ -183,20 +207,14 @@
         state: absent
         autoremove: true
         purge: true
-
-    # ==============================================================
-    # Install python dependencies
-    # ==============================================================
-    - name: Install python dependencies
-      ansible.builtin.include_role: 
-        name: install_python_dependencies
-
+      
     # ==============================================================
     # Install dtu-ert-pi from git repository
     # ==============================================================  
     - name: install dtu-ert-pi from git repository
       ansible.builtin.include_role: 
         name: install_dtu-ert-pi_from_git
+      # Result checked and OK
 
     # ==============================================================
     # Transfer settings files
@@ -204,13 +222,7 @@
     - name: Transfer settings files
       ansible.builtin.include_role: 
         name: configure_settings_files
-
-    # ==============================================================
-    # Update crontab
-    # ============================================================== 
-    - name: Update crontab
-      ansible.builtin.include_role: 
-        name: install_crontab
+      # Result checked and OK
 
     # ==============================================================
     # Install wittypi code
@@ -218,6 +230,15 @@
     - name: install wittypi
       ansible.builtin.include_role: 
         name: install_wittypi_from_git
+      # Result checked and OK
+
+    # ==============================================================
+    # Update crontab
+    # ============================================================== 
+    - name: Update crontab
+      ansible.builtin.include_role: 
+        name: install_crontab
+      # Result checked and OK
 
     - name: Set overlayfs and bootro to enabled
       ansible.builtin.include_role:
@@ -226,9 +247,13 @@
         enable_bootro: "{{ finally_enable_ofs_bootro }}"
         enable_overlayfs: "{{ finally_enable_ofs_bootro }}"
         allow_reboot: true
+        force_reboot: true
 
     - name: Collect overlayfs and bootro facts
       collect_overlayfs_bootro_fact:
+
+# SSH keys can be removed with command like:
+# ssh-keygen -f "/home/thin/.ssh/known_hosts" -R "10.67.1.191"
 
     # ==============================================================
     # reboot remote
