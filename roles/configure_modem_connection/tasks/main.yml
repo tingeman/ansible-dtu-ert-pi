@@ -35,7 +35,17 @@
       owner: root
       group: root
       mode: u=rw,g=rw,o=rw
-    debugger: on_failed
+
+  - name: Set lower MTU for ppp0 interface
+    # SSH connection freezes up when long output is requested
+    # this is handled by reducing the MTU by trial and error
+    # 1200 seems to work well on DK network. What about Greenland?
+    ansible.builtin.lineinfile:
+      path: /etc/ppp/options
+      state: present
+      insertafter: EOF
+      regexp: '^[\s]*[#]*[\s]*mtu'
+      line: "mtu {{ ppp0_mtu }}}"
 
   - name: Add root user to the dialout group
     ansible.builtin.user:
