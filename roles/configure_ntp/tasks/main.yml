@@ -24,31 +24,46 @@
       regexp: "{{ item.regexp }}"
       state: absent
     loop:
-      - { regexp: '^[\s#]restrict[\s]+127.0.0.1' }
-      - { regexp: '^[\s#]restrict[\s]+::1.*' }
-      - { regexp: '^[\s#]Local users may interrogate' }
-      - { regexp: '^[\s#]restrict[\s]+192.168.23.0' }
-      - { regexp: '^[\s#]server[\s]+127.127.1.0' }
-      - { regexp: '^[\s#]fudge[\s]+127.127.1.0' }
+      - { regexp: '^[\s]*[#]*[\s]*restrict[\s]+127.0.0.1' }
+      - { regexp: '^[\s]*[#]*[\s]*restrict[\s]+::1.*' }
+      - { regexp: '^[\s]*[#]*[\s]*Local users may interrogate' }
+      - { regexp: '^[\s]*[#]*[\s]*restrict[\s]+192.168.23.0' }
+      - { regexp: '^[\s]*[#]*[\s]*server[\s]+127.127.1.0' }
+      - { regexp: '^[\s]*[#]*[\s]*fudge[\s]+127.127.1.0' }
     notify:
       - restart ntp service
+  
+  - name: add lines to ntp.conf file
+    ansible.builtin.blockinfile: 
+      path: /etc/ntp.conf
+      state: present
+      marker: "# {mark} ANSIBLE MANAGED BLOCK restrict1"
+      block: |
+        # Local users may interrogate the ntp server more closely.
+        restrict 127.0.0.1
+        restrict ::1
+    notify:
+      - restart ntp service    
 
   - name: add lines to ntp.conf file
-    ansible.builtin.lineinfile: 
+    ansible.builtin.blockinfile: 
       path: /etc/ntp.conf
-      line: "{{ item }}"
       state: present
-    loop:
-      - ' '
-      - '# Local users may interrogate the ntp server more closely.'
-      - 'restrict 127.0.0.1'
-      - 'restrict ::1'
-      - ' '
-      - '# Clients from this subnet can request time'
-      - 'restrict 192.168.23.0 mask 255.255.255.0 nomodify notrap'
-      - ' '
-      - '# Use local clock if upstream server is not available'
-      - 'server  127.127.1.0 # local clock'
-      - 'fudge   127.127.1.0 stratum 3'
+      marker: "# {mark} ANSIBLE MANAGED BLOCK restrict2"
+      block: |
+        # Clients from this subnet can request time
+        restrict 192.168.23.0 mask 255.255.255.0 nomodify notrap
     notify:
-      - restart ntp service
+      - restart ntp service  
+
+  - name: add lines to ntp.conf file
+    ansible.builtin.blockinfile: 
+      path: /etc/ntp.conf
+      state: present
+      marker: "# {mark} ANSIBLE MANAGED BLOCK local clock"
+      block: |
+        # Use local clock if upstream server is not available
+        server  127.127.1.0 # local clock
+        fudge   127.127.1.0 stratum 3
+    notify:
+      - restart ntp service  
