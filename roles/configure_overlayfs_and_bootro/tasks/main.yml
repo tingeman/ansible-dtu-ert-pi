@@ -131,7 +131,7 @@
       block:
         - include_role: 
             name: reboot_now
-          when: ((rpi_overlay_conf != rpi_overlay_now) or (rpi_bootro_conf != rpi_bootro_now) or (enable_overlayfs == true)) and (allow_reboot == true)
+          when: (((rpi_overlay_conf != rpi_overlay_now) or (rpi_bootro_conf != rpi_bootro_now) or (enable_overlayfs == true)) and (allow_reboot == true)) or ((force_reboot is defined) and (force_reboot == true))
           register: status_reboot
 
         - name: Collect overlayfs and bootro facts
