@@ -3,6 +3,7 @@
   - name: Install packages relating to python
     ansible.builtin.apt:
       name: 
+        - python3
         - python3-dev
         - build-essential
         - libffi-dev
