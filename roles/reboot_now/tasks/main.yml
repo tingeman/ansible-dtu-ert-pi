@@ -10,10 +10,12 @@
     - name: Reboot machine using a custom reboot command
       ansible.builtin.reboot:
         reboot_command: "{{ (dtuertpi_dir, 'sh_scripts', 'reboot_now.sh') | path_join }}"
+        reboot_timeout: 600
       when: stat_result.stat.exists
       register: custom_reboot
 
     - name: Reboot machine using the system reboot command
       ansible.builtin.reboot:
+        reboot_timeout: 600
       when: not stat_result.stat.exists
       register: system_reboot
