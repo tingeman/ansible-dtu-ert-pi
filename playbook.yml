@@ -30,7 +30,7 @@
   become: true
   vars:
     dtu_ert_git_repo: 'https://github.com/tingeman/dtu-ert-pi.git'
-    dtu_ert_git_branch: master
+    dtu_ert_git_branch: develop/main
     wittypi_git_repo: 'https://github.com/tingeman/Witty-Pi-4.git'
     wittypi_git_branch: develop # main
     local_tmp_dir: './tmp'
