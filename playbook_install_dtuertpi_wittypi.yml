@@ -26,6 +26,25 @@
         allow_reboot: true
 
     # ==============================================================
+    # Install packages
+    # ==============================================================
+    - name: install dependencies with apt-get
+      ansible.builtin.package:   # or ansible.builtin.apt (for debian/ubuntu flavors)
+        name: 
+          - git
+          - bc
+        state: present
+      # Result checked and OK
+
+    # ==============================================================
+    # Install python dependencies
+    # ==============================================================
+    - name: Install python dependencies
+      ansible.builtin.include_role: 
+        name: install_python_dependencies
+      # Result checked and OK
+
+    # ==============================================================
     # Install dtu-ert-pi code
     # ==============================================================  
     - name: install dtu-ert-pi
