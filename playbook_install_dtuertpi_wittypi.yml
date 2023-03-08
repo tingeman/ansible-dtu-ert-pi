@@ -1,0 +1,59 @@
+---
+# ansible-playbook -k -i hosts playbook_install_dtuertpi.yml -v
+# ansible all -i hosts -k -m ansible.builtin.setup -u pi
+
+# --extra-vars "xxx=yyy"
+
+- name: Install ert-pi from scratch
+  hosts: rpi_hosts
+  remote_user: pi
+  become: true
+  vars:
+    dtu_ert_git_repo: 'https://github.com/tingeman/dtu-ert-pi.git'
+    dtu_ert_git_branch: develop/main
+    wittypi_git_repo: 'https://github.com/tingeman/Witty-Pi-4.git'
+    wittypi_git_branch: develop # main
+    local_tmp_dir: './tmp'
+    finally_enable_ofs_bootro: true
+
+  tasks:
+    - name: Set overlayfs and bootro to disabled
+      ansible.builtin.include_role:
+        name: configure_overlayfs_and_bootro
+      vars:
+        enable_bootro: false
+        enable_overlayfs: false
+        allow_reboot: true
+
+    # ==============================================================
+    # Install dtu-ert-pi code
+    # ==============================================================  
+    - name: install dtu-ert-pi
+      ansible.builtin.include_role: 
+        name: install_dtu-ert-pi_from_git
+  
+    # ==============================================================
+    # Install wittypi code
+    # ==============================================================  
+    - name: install wittypi
+      ansible.builtin.include_role: 
+        name: install_wittypi_from_git
+
+    # ==============================================================
+    # Transfer settings files
+    # ============================================================== 
+    - name: Transfer settings files
+      ansible.builtin.include_role: 
+        name: configure_settings_files
+      # Result checked and OK
+
+    - name: Set overlayfs and bootro to enabled
+      ansible.builtin.include_role:
+        name: configure_overlayfs_and_bootro
+      vars:
+        enable_bootro: "{{ finally_enable_ofs_bootro }}"
+        enable_overlayfs: "{{ finally_enable_ofs_bootro }}"
+        allow_reboot: true
+
+    - name: Collect overlayfs and bootro facts
+      collect_overlayfs_bootro_fact:
