@@ -6,7 +6,9 @@
 
   - name: Install the NTP daemon 
     ansible.builtin.apt:
-      name: ntp
+      name: 
+       - ntp
+       - ntpstat
       state: present
 
   - name: Set timezone variables

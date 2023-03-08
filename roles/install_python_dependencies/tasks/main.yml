@@ -20,6 +20,7 @@
         - pyyaml 
         - numpy 
         - vcgencmd
+        - pytz
       executable: pip3
 
   - name: Install nice-to-have python modules
