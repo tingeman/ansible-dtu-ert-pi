@@ -1,8 +1,10 @@
 [rpi_hosts]
-# QEQ-ERT-02-RPi3 ansible_host=192.168.0.36    # ???
-QEQ-ERT-02-RPi3 ansible_host=10.67.1.193    # WiFi
-#QEQ-ERT-02-RPi1 ansible_host=192.168.130.45 # 
-QEQ-ERT-02-RPi1 ansible_host=10.67.1.191
+QEQ-ERT-02-RPi1 ansible_host=10.67.1.191    # WiFi at THIN
+#QEQ-ERT-02-RPi1 ansible_host=10.211.149.84    # 1nce VPN over cellular
+
+QEQ-ERT-02-RPi3 ansible_host=10.67.1.193    # WiFi at THIN
+#QEQ-ERT-02-RPi3 ansible_host=10.211.149.8     # 1nce VPN over cellular
+
 
 [mylocalhosts]
 mylocalhost ansible_connection=local
