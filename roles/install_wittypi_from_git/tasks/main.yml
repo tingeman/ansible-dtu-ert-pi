@@ -94,6 +94,21 @@
       group: root
       mode: u=rw,g=rw,o=rw
 
+  - name: find sh-scripts from wittypi
+    ansible.builtin.find:
+      paths: 
+        - "{{ wittypi_dir }}"
+      patterns: '*.sh'
+    register: sh_files_found
+
+  - name: make sh-scripts executable (wittypi)
+    ansible.builtin.file:
+      path: "{{ item.path }}"
+      owner: root
+      group: root
+      mode: u=xrw,g=rw,o=rw
+    with_items: "{{ sh_files_found.files }}"
+
   - name: Reboot
     ansible.builtin.include_role: 
       name: reboot_now
