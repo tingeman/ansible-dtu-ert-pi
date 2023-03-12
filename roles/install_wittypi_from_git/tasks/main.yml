@@ -47,6 +47,30 @@
       - { regexp: '(?i)^[\s]*SCHEDULE_LOG_FILE=', line: "SCHEDULE_LOG_FILE=\"{{ (usb_mount_point, 'logs', 'schedule.log') | path_join }}\"" }
       - { regexp: '(?i)^[\s]*SCHEDULE_FILE=', line: "SCHEDULE_FILE=\"{{ (wittypi_dir, 'schedule.wpi') | path_join }}\"" }
       - { regexp: '(?i)^[\s]*SCHEDULES_DIR=', line: "SCHEDULES_DIR=\"{{ (wittypi_dir, 'schedules') | path_join }}\"" }
+      - { regexp: '(?i)^[\s]*DTUERTPI_DIR', line: "DTUERTPI_DIR=\"{{ dtuertpi_dir }}\"" }
+
+  - name: Call send_alive.py from WittyPi beforeScript.sh
+    ansible.builtin.blockinfile: 
+      path: "{{ ( wittypi_dir, 'beforeScript.sh' ) | path_join }}"
+      state: present
+      marker: "# {mark} ANSIBLE MANAGED BLOCK call send_alive.py"
+      block: |
+        # get current directory
+        wittypi_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+        # utilities
+        . "$wittypi_dir/utilities.sh"
+
+        # include wittyPi.conf script
+        . $wittypi_dir/wittyPi.conf
+
+        has_mc=$(is_mc_connected)
+
+        if [ $has_mc == 1 ] ; then
+          # Get reason for bootup
+          reason=$(i2c_read 0x01 $I2C_MC_ADDRESS $I2C_ACTION_REASON)
+          /usr/bin/python3 "$DTUERTPI_DIR"/send_alive.py "Booting (action=$reason)..."
+        fi
 
   - name: Copy wittypi schedule to schedules dir
     ansible.builtin.copy:
