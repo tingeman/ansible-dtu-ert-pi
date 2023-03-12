@@ -3,11 +3,11 @@ fan_on_temperature: 60000   # DegC * 1000
 enable_bluetooth: false
 enable_wifi: true
 
-base_dir: /root/
-install_scripts_dir: "{{ base_dir }}install_files/"
-tmp_dir:  "{{ install_scripts_dir }}tmp/"
-wittypi_dir: "{{ base_dir }}wittypi/"
-dtuertpi_dir: "{{ base_dir }}dtu-ert-pi/"
+base_dir: "/root"
+install_scripts_dir: "{{ base_dir }}/install_files"
+tmp_dir:  "{{ install_scripts_dir }}/tmp"
+wittypi_dir: "{{ base_dir }}/wittypi"
+dtuertpi_dir: "{{ base_dir }}/dtu-ert-pi"
 
 wittypi_default_power_state: 1            # 1 = TURN ON; 0 = STAY OFF, when power is connected 
 wittypi_low_voltage_threshold: 55         # threshold voltage * 10 (as integer)
