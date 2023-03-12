@@ -11,3 +11,36 @@
       - { src: 'python_config_rpi4.yml.j2', dest: "{{ (dtuertpi_dir, 'python_config.yml') | path_join}}" }
       - { src: 'script_settings_rpi4.j2', dest: "{{ (dtuertpi_dir, 'sh_scripts', 'script_settings') | path_join}}" }
     when: host_hardware == 'raspberry_pi_4'
+
+  - name: Modify wittyPi.conf file
+    ansible.builtin.lineinfile:
+      path: "{{ (wittypi_dir, 'wittyPi.conf') | path_join }}"
+      state: present
+      regexp: "{{ item.regexp }}"
+      line: "{{ item.line }}"
+    loop:
+      - { regexp: '(?i)^[\s]*DTUERTPI_DIR', line: "DTUERTPI_DIR=\"{{ dtuertpi_dir }}\"" }
+
+
+  - name: Call send_alive.py from WittyPi beforeScript.sh
+    ansible.builtin.blockinfile: 
+      path: {{ ( wittypi_dir, 'beforeScript.sh' ) | path_join }}
+      state: present
+      marker: "# {mark} ANSIBLE MANAGED BLOCK call send_alive.py"
+      block: |
+        # get current directory
+        wittypi_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+        # utilities
+        . "$wittypi_dir/utilities.sh"
+
+        # include wittyPi.conf script
+        . $wittypi_dir/wittyPi.conf
+
+        has_mc=$(is_mc_connected)
+
+        if [ $has_mc == 1 ] ; then
+          # Get reason for bootup
+          reason=$(i2c_read 0x01 $I2C_MC_ADDRESS $I2C_ACTION_REASON)
+          /usr/bin/python3 "$DTUERTPI_DIR"/send_alive.py "Booting (action=$reason)..."
+        fi
