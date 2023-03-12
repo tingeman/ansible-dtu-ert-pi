@@ -198,6 +198,7 @@
     - name: Remove unwanted packages with apt-get
       ansible.builtin.package:   # or ansible.builtin.apt (for debian/ubuntu flavors)
         name: 
+          - systemd-timesyncd
           - dphys-swapfile
           - wolfram-engine 
           - triggerhappy 
